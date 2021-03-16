@@ -9,19 +9,17 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setuptools.setup(
     name='mridataPy',
-    version='0.0.1',
-    description='A lightning toolbox for downloading and processing mridata from mridata.org',
+    version='0.0.5',
+    description='A lightweight toolbox for downloading and processing mridata from mridata.org',
     author='Yi Zhang',
     author_email='yizhang.dev@gmail.com',
     long_description=README,
     long_description_content_type='text/markdown',
     url='https://github.com/yzhang-dev/mridataPy',
     download_url='https://github.com/yzhang-dev/mridataPy',
-    packages=[
-        'mridatapy'
-    ],
+    packages=setuptools.find_packages(),
     keywords=[
-        'mri', 'mri-reconstruction'
+        'mri', 'mri-reconstruction', 'mridata'
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',

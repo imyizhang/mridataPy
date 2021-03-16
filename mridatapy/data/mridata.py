@@ -74,7 +74,7 @@ class MRIData(object):
     _urls = []
     _filenames = []
     _data_type = 'ismrmrd'
-    _data_dir = '.'
+    _data_dir = pathlib.Path('.')
 
     def __init__(
         self,
@@ -83,8 +83,8 @@ class MRIData(object):
     ):
         """
         Args:
-            data_type (Optional): Data type of mridata files that determines
-                download URLs from either mridata.org or old.mridata.org.
+            data_type (Optional): Data type of mridata that determines download
+                URLs from either mridata.org or old.mridata.org.
                     - "ismrmrd" (Default): from mridata.org.
                     - "cfl": from old.mridata.org, can be loaded much faster.
             path (Optional): Directory where folder "mridata/" to be created.
@@ -95,62 +95,75 @@ class MRIData(object):
             raise ValueError
         self._urls, self._filenames = self.get(data_type)
         self._data_type = data_type
-        self._data_dir = pathlib.Path(path).joinpath('mridata')
+        path = pathlib.Path(path) if path else self._data_dir
+        self._data_dir = path.joinpath('mridata')
         self._data_dir.mkdir(parents=True, exist_ok=True)
 
     @property
     def urls(self):
+        """Whole lists of download URLs corresponding to mridata of the given
+        data type.
+        """
         return self._urls
 
     @property
     def filenames(self):
+        """Whole lists of download filenames corresponding to mridata of the
+        given data type."""
         return self._filenames
 
     @property
     def type(self):
+        """Data type of mridata."""
         return self._data_type
 
     @property
     def dir(self):
+        """Directory to the folder "mridata/" as the default path for mridata."""
         return self._data_dir
 
     def download(
         self,
         num: Optional[int] = None
-    ):
+    ) -> Sequence[pathlib.Path]:
         """Downloads mridata of the given data type.
 
         Args:
             num (Optional): Number of data files to be downloaded. If not given,
                 download all. `num` only works when not greater than 20. Totally,
                 there are 20 cases.
+
+        Returns:
+            The list of output downloaded data files.
         """
         downloaded = []
         for url, filename in zip(self._urls, self._filenames):
             if (num > 0) and (len(downloaded) == num):
                 break
-            self.fetch(url, filename, self._data_dir)
-            downloaded.append(url)
+            file = self.fetch(url, filename, self._data_dir)
+            downloaded.append(file)
+        return downloaded
 
     def to_np(
         self,
-        stack: bool,
-        num: Optional[int] = None
+        num: Optional[int] = None,
+        stack: Optional[bool] = None
     ) -> Union[np.ndarray, Dict[str, np.ndarray]]:
         """Loads mridata to complex-valued k-space NumPy arrays. If not exist,
         download first.
 
         Args:
-            stack: Stack toggle, to determine if different cases are stacked.
             num (Optional): Number of data files to be loaded. If not given,
                 load all existing "valid" files. `num` only works when not
                 greater than the number of existing "valid" files. Maximum
                 number of "valid" files should be 20.
+            stack (Optional): Stack toggle, to determine if different cases are
+                stacked.
 
         Returns:
             - Stacked: NumPy array of shape (Ncases, Nslices, Ncoils, Nx, Ny).
-            - Otherwise: A dictionary mapping output names to corresponding
-            NumPy arrays of shape (Nslices, Ncoils, Nx, Ny).
+            - Not stacked (Defualt): A dictionary mapping output names to
+            corresponding NumPy arrays of shape (Nslices, Ncoils, Nx, Ny).
         """
         data = {}
         if self._data_type == 'ismrmrd':
@@ -191,18 +204,13 @@ class MRIData(object):
 
     def to_npy(
         self,
-        stack: bool,
         path: Optional[Union[str, pathlib.Path]] = None,
-        num: Optional[int] = None
-    ):
+        num: Optional[int] = None,
+        stack: Optional[bool] = None
+    ) -> Sequence[pathlib.Path]:
         """Converts mridata to .npy files. If not exist, download first.
 
         Args:
-            stack: Stack toggle, to determine if different cases are stacked.
-                    - True: NumPy array of shape (Ncases, Nslices, Ncoils, Nx, Ny)
-                    will be saved.
-                    - False: NumPy array of shape (Nslices, Ncoils, Nx, Ny) for
-                    each case will be individually saved.
             path (Optional): Output directory where .npy file to be saved. If
                 not given, save to the same path as initialized, e.g.,
                 "./mridata/".
@@ -210,25 +218,38 @@ class MRIData(object):
                 load all existing "valid" files. `num` only works when not
                 greater than the number of existing "valid" files. Maximum
                 number of "valid" files should be 20.
+            stack (Optional): Stack toggle, to determine if different cases are
+                stacked.
+                    - True: NumPy array of shape (Ncases, Nslices, Ncoils, Nx, Ny)
+                    will be saved.
+                    - False (Default): NumPy array of shape (Nslices, Ncoils, Nx, Ny)
+                    for each case will be individually saved.
+
+        Returns:
+            The list of output saved .npy files.
         """
-        data = self.to_np(stack, num=num)
+        data = self.to_np(num=num, stack=stack)
         path = pathlib.Path(path) if path else self._data_dir
         path.mkdir(parents=True, exist_ok=True)
+        npyfiles = []
         if stack:
             npyfile = path.joinpath('mridata.npy')
             np.save(npyfile, data)  # overwrite if exists
+            npyfiles.append(npyfile)
         else:
             for name, a in data.items():
                 npyfile = path.joinpath(name + '.npy')
                 np.save(npyfile, a)  # overwrite if exists
+                npyfiles.append(npyfile)
+        return npyfiles
 
     @staticmethod
     def get(data_type: str) -> Tuple[Sequence[str], Sequence[str]]:
-        """Gets whole lists of download URLs and filenames corresponding to the
-        given data type of mridata files to be downloaded.
+        """Gets whole lists of download URLs and filenames corresponding to
+        mridata of the given data type to be downloaded.
 
         Args:
-            data_type: Data type of mridata files that determines download URLs
+            data_type: Data type of mridata that determines download URLs
                 from either mridata.org or old.mridata.org.
                     - "ismrmrd": from mridata.org.
                     - "cfl": from old.mridata.org, can be loaded much faster.
@@ -253,13 +274,16 @@ class MRIData(object):
         url: str,
         filename: str,
         path: Union[str, pathlib.Path]
-    ):
-        """Fetches mridata given the specific download URL and filename.
+    ) -> pathlib.Path:
+        """Fetches mridata given the specific pair of download URL and filename.
 
         Args:
             url: URL that allows to download a mridata file.
             filename: Filename of output.
             path: Output directory where data file to be fetched.
+
+        Returns:
+            Output fetched data file.
 
         References:
             [1] https://github.com/mikgroup/mridata-python/blob/master/mridata/download.py
@@ -277,6 +301,7 @@ class MRIData(object):
                               unit='KB'):
                 if chunk:
                     f.write(chunk)
+        return file
 
     @staticmethod
     def ismrmrd_to_np(
@@ -286,7 +311,7 @@ class MRIData(object):
         """Loads .h5 ISMRMRD file to complex-valued k-space NumPy array.
 
         Args:
-            file: Input ISMRMRD file, e.g., a "./mridata/<uuid>.h5".
+            file: Input ISMRMRD file, e.g., "./mridata/<uuid>.h5".
             first_slice (Optional): If True, extract only the first slice of a
                 k-space volumn (a case).
 
@@ -334,7 +359,7 @@ class MRIData(object):
         """Converts .h5 ISMRMRD file to .npy file.
 
         Args:
-            file: Input ISMRMRD file, e.g., a "./mridata/<uuid>.h5".
+            file: Input ISMRMRD file, e.g., "./mridata/<uuid>.h5".
             path: Output directory where .npy file to be saved. If not given,
                 save under the same directory of input ISMRMRD file.
             first_slice (Optional): If True, extract only the first slice of a
@@ -355,7 +380,7 @@ class MRIData(object):
         """Loads .cfl file to complex-valued k-space NumPy array.
 
         Args:
-            file: Input data file, either a .zip file, e.g., "./mridata/P1.zip",
+            file: Input data file, either .zip file, e.g., "./mridata/P1.zip",
                 or a folder, e.g., "./mridata/p1", that contains "kspace.hdr"
                 and "kspace.cfl". If given a .zip file, original file will be
                 deleted once unzipped.
@@ -409,7 +434,7 @@ class MRIData(object):
         """Converts .cfl file to .npy file.
 
         Args:
-            file: Input data file, either a .zip file, e.g., "./mridata/P1.zip",
+            file: Input data file, either .zip file, e.g., "./mridata/P1.zip",
                 or a folder, e.g., "./mridata/p1", that contains "kspace.hdr"
                 and "kspace.cfl". If given a .zip file, original file will be
                 deleted once unzipped.
@@ -430,13 +455,14 @@ class MRIData(object):
         path: Optional[Union[str, pathlib.Path]] = None,
         remove: Optional[bool] = None
     ):
-        """Unzip .zip file.
+        """Unzips .zip file.
 
         Args:
             file: Input .zip file, e.g., "./mridata/P1.zip".
             path (Optional): Output directory where .zip file to be unzipped.
                 If not given, unzip under the same directory as the input .zip
-                file.
+                file, and data folder, e.g., "./mridata/p1/" will be created
+                for unzipped data.
             remove (Optional): Remove toggle, to determine if original .zip file
                 will be deleted once unzipped.
         """
@@ -452,4 +478,21 @@ class MRIData(object):
             if remove:
                 file.unlink()  # delete .zip file
         else:
+            raise ValueError
+
+    @staticmethod
+    def load_npy(file: Union[str, pathlib.Path]) -> np.ndarray:
+        """Loads .npy file.
+
+        Args:
+            file: Input .npy file, e.g., "./mridata/<uuid>.npy".
+
+        Returns:
+            NumPy array of shape (Nslices, Ncoils, Nx, Ny) or
+            (Ncases, Nslices, Ncoils, Nx, Ny).
+        """
+        try:
+            a = np.load(file)
+            return a
+        except:
             raise ValueError

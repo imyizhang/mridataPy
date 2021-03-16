@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from typing import Optional
+
 import numpy as np
-import scipy
+# TODO: write my own `uniform_filter`
+# `import scipy` raises AttributeError: module 'scipy' has no attribute 'ndimage'
+import scipy.ndimage
 
 
 def _asfloat64(gt: np.ndarray, pred: np.ndarray) -> (np.ndarray, np.ndarray):

@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from typing import Optional
+
 import numpy as np
 
 
 def root_sum_squares(
     input: np.ndarray,
-    dim: int = 1,
-    complex: bool = False
+    dim: int,
+    complex: Optional[bool] = None
 ) -> np.ndarray:
-    """Computes the Root Sum of Squares (RSS) along the a given dimension (coil
-    dimension).
+    """Computes the Root Sum of Squares (RSS) of input along the a given
+    dimension (coil dimension).
 
     Args:
         input: Input NumPy array with multiple channels (coils), can be complex.
         dim: Dimension along which to apply RSS transform.
-        complex: Complex toggle, to handle the case where the real and imaginary
-            parts are stacked along the last dimension of input.
+        complex (Optional): Complex toggle, to handle the case where the real
+            and imaginary parts are stacked along the last dimension of input.
                 - False (Default): Input has the shape of (Nslices, Ncoils, Nx, Ny)
                 or (Ncoils, Nx, Ny).
                 - True: Input has the shape of (Nslices, Ncoils, Nx, Ny, 2)

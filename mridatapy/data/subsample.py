@@ -30,8 +30,8 @@ def _temp_seed(
 
 
 class Mask(object):
-    """A sampling Mask object that densely samples the center region in k-space
-    while subsamples the outer region based on the acceleration factor.
+    """A sampling Mask object that can densely sample the center region in
+    k-space while subsample the outer region based on acceleration factor.
 
     References:
         [1] https://github.com/facebookresearch/fastMRI/blob/master/fastmri/data/subsample.py
@@ -65,8 +65,8 @@ class Mask(object):
 
 
 class RandomLine(Mask):
-    """RandomLine generates a sampling mask of a given shape. The mask selects
-    a subset of columns from the input k-space data.
+    """RandomLine generates a sampling mask of the given shape. The mask randomly
+    selects a subset of columns from input k-space data.
 
     Assuming the k-space data has N columns, the mask picks out:
         1. N_center = N * center_fraction columns in the center region
@@ -134,8 +134,8 @@ class RandomLine(Mask):
 
 class EquispacedLine(Mask):
     """
-    EquispacedLine generates a sampling mask of a given shape. The mask selects
-    a subset of columns from the input k-space data.
+    EquispacedLine generates a sampling mask of the given shape. The mask
+    selects a roughly equispaced subset of columns from input k-space data.
 
     Assuming the k-space data has N columns, the mask picks out:
         1. N_center = (N * center_fraction) columns in the center region
@@ -210,8 +210,8 @@ class EquispacedLine(Mask):
 
 class PoissonDisk(Mask):
     """
-    PoissonDisk generates a sampling mask of a given shape. The mask selects
-    a subset of points from the input k-space data, characterized by the Poisson
+    PoissonDisk generates a sampling mask of the given shape. The mask selects
+    a subset of points from input k-space data, characterized by the Poisson
     disk sampling pattern.
 
     Assuming the k-space radius is r, the Poisson disk mask samples with the
