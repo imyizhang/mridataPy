@@ -33,7 +33,7 @@ mridata.download(num=1)
 
 #### Package Dependencies
 
-`pip` will handle all package dependencies. 
+`pip` will handle all package dependencies.
 
 
 
@@ -91,11 +91,11 @@ class mridatapy.data.MRIData(data_type=None, path=None)
 
   **Static method**: Fetches mridata given the specific pair of download URL and filename.
 
-* `ismrmrd_to_np(file, first_slice=None)`
+* `ismrmrd_to_np(file, filter=None, prewhiten=None, first_slice=None)`
 
   **Static method**: Loads .h5 ISMRMRD file to complex-valued k-space NumPy array.
 
-* `ismrmrd_to_npy(file, path=None, first_slice=None)`
+* `ismrmrd_to_npy(file, path=None, filter=None, prewhiten=None, first_slice=None)`
 
   **Static method**: Converts .h5 ISMRMRD file to .npy file.
 
@@ -123,9 +123,9 @@ class mridatapy.data.MRIData(data_type=None, path=None)
 class mridatapy.data.RandomLine(acceleration_factor, center_fraction)
 ```
 
-Generates a sampling mask of the given shape that can densely sample the center region in k-space while subsample the outer region based on acceleration factor. The mask randomly selects a subset of columns from input k-space data. 
+Generates a sampling mask of the given shape that can densely sample the center region in k-space while subsample the outer region based on acceleration factor. The mask randomly selects a subset of columns from input k-space data.
 
-* `__call__(shape, max_attempts=30, tolerance=0.1, seed=None)`
+* `__call__(shape, dtype=numpy.complex64, max_attempts=30, tolerance=0.1, seed=None)`
 
   Magic method enables instances to behave like functions.
 
@@ -139,7 +139,7 @@ class mridatapy.data.EquispacedLine(acceleration_factor, center_fraction)
 
 Generates a sampling mask of the given shape that can densely sample the center region in k-space while subsample the outer region based on acceleration factor. The mask selects a roughly equispaced subset of columns from input k-space data.
 
-* `__call__(shape, max_attempts=30, tolerance=0.1, seed=None)`
+* `__call__(shape, dtype=numpy.complex64, max_attempts=30, tolerance=0.1, seed=None)`
 
   Magic method enables instances to behave like functions.
 
@@ -153,7 +153,7 @@ class mridatapy.data.PoissonDisk(acceleration_factor, center_fraction)
 
 Generates a sampling mask of the given shape that can densely sample the center region in k-space while subsample the outer region based on acceleration factor. The mask selects a subset of points from input k-space data, characterized by the Poisson disk sampling pattern.
 
-* `__call__(shape, max_attempts=30, tolerance=0.1, seed=None)`
+* `__call__(shape, dtype=numpy.complex64, max_attempts=30, tolerance=0.1, seed=None)`
 
   Magic method enables instances to behave like functions.
 
@@ -203,7 +203,7 @@ Computes the Mean Squared Error (MSE) between two images.
 
 
 
-#### `normalized_mse` 
+#### `normalized_mse`
 
 ```python
 function mridatapy.metrics.normalized_mse(gt, pred)
@@ -237,4 +237,4 @@ Computes the Structural Similarity Index (SSIM) between two images.
 
 * [mridata.org](http://mridata.org/)
 * [mridata-python](https://github.com/mikgroup/mridata-python) ([pypi.org/project/mridata/](https://pypi.org/project/mridata/))
-
+* [SigPy](https://github.com/mikgroup/sigpy)

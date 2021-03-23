@@ -12,6 +12,8 @@ import numpy as np
 import requests
 from tqdm import tqdm
 
+from utils import fft_centered
+
 
 MRIDATA_ORG = 'http://mridata.org/'
 
@@ -306,12 +308,16 @@ class MRIData(object):
     @staticmethod
     def ismrmrd_to_np(
         file: Union[str, pathlib.Path],
+        filter: Optional[bool] = None,
+        prewhiten: Optional[bool] = None,
         first_slice: Optional[bool] = None
     ) -> np.ndarray:
         """Loads .h5 ISMRMRD file to complex-valued k-space NumPy array.
 
         Args:
             file: Input ISMRMRD file, e.g., "./mridata/<uuid>.h5".
+            filter (Optional): If True, apply anti-aliasing readout filter.
+            prewhiten (Optional): If True, apply noise pre-whitening.
             first_slice (Optional): If True, extract only the first slice of a
                 k-space volumn (a case).
 
@@ -320,6 +326,7 @@ class MRIData(object):
 
         References:
             [1] https://github.com/ismrmrd/ismrmrd-paper/blob/master/code/do_recon_python.py
+            [2] https://github.com/MRSRL/dl-cs/blob/master/data_prep.py
         """
         file = pathlib.Path(file)
         if not file.is_file():
@@ -338,6 +345,15 @@ class MRIData(object):
         # Initialiaze a storage array
         a = np.zeros(shape, dtype=np.complex64)  # (Nslices, Ncoils, Nx, Ny)
 
+        # Anti-aliasing readout filter
+        if filter:
+            rec_std = dataset.read_array('rec_std', 0)
+            rec_weight = 1.0 / (np.square(rec_std))
+            rec_weight = np.sqrt(rec_weight / np.sum(rec_weight))
+        else:
+            rec_weight = np.ones(num_coils)
+        readout_filter = np.diag(rec_weight)
+
         # Loop through the acquisitions, ignoring noise scans
         num_acq = dataset.number_of_acquisitions()
         if first_slice:
@@ -346,14 +362,24 @@ class MRIData(object):
             acq = dataset.read_acquisition(i)
             idx_slice = acq.idx.slice
             idx_ky = acq.idx.kspace_encode_step_1
-            a[idx_slice, :, :, idx_ky] = acq.data
+            # Apply anti-aliasing readout filter
+            data = np.matmul(readout_filter.T, acq.data)
+            a[idx_slice, :, :, idx_ky] = data * ((-1)**idx_slice) if prewhiten else data
 
-        return a
+        dataset.close()
+
+        # Apply noise pre-whitening
+        if prewhiten:
+            a = fft_centered(a, dim=(0,), norm='ortho')
+
+        return a  # a.dtype -> np.complex64
 
     @staticmethod
     def ismrmrd_to_npy(
         file: Union[str, pathlib.Path],
         path: Optional[Union[str, pathlib.Path]] = None,
+        filter: Optional[bool] = None,
+        prewhiten: Optional[bool] = None,
         first_slice: Optional[bool] = None
     ):
         """Converts .h5 ISMRMRD file to .npy file.
@@ -362,6 +388,8 @@ class MRIData(object):
             file: Input ISMRMRD file, e.g., "./mridata/<uuid>.h5".
             path: Output directory where .npy file to be saved. If not given,
                 save under the same directory of input ISMRMRD file.
+            filter (Optional): If True, apply anti-aliasing readout filter.
+            prewhiten (Optional): If True, apply noise pre-whitening.
             first_slice (Optional): If True, extract only the first slice of a
                 k-space volumn (a case) from the corresponding ISMRMRD file.
         """
@@ -372,7 +400,10 @@ class MRIData(object):
         path.mkdir(parents=True, exist_ok=True)
         npyfile = path.joinpath(file.name.split('.')[0].lower() + '.npy')
         if not npyfile.exists():
-            a = MRIData.ismrmrd_to_np(file, first_slice=first_slice)
+            a = MRIData.ismrmrd_to_np(file,
+                                      filter=filter,
+                                      prewhiten=prewhiten,
+                                      first_slice=first_slice)
             np.save(npyfile, a)
 
     @staticmethod
@@ -424,7 +455,7 @@ class MRIData(object):
         a = a.reshape(shape, order='F')  # (Nx, Ny, Nslices, Ncoils) from .hdr
         a = np.transpose(a, axes=(2, 3, 0, 1))  # (Nslices, Ncoils, Nx, Ny)
 
-        return  a
+        return  a  # a.dtype -> np.complex64
 
     @staticmethod
     def cfl_to_npy(

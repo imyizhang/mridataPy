@@ -57,6 +57,7 @@ class Mask(object):
     def __call__(
         self,
         shape: Tuple[int, ...],
+        dtype: np.dtype = np.complex64,
         max_attempts: int = 30,
         tolerance: float = 0.1,
         seed: Optional[Union[int, Sequence[int]]] = None
@@ -81,6 +82,7 @@ class RandomLine(Mask):
     def __call__(
         self,
         shape: Tuple[int, ...],
+        dtype: np.dtype = np.complex64,
         max_attempts: int = 30,
         tolerance: float = 0.1,
         seed: Optional[Union[int, Sequence[int]]] = None
@@ -89,6 +91,7 @@ class RandomLine(Mask):
         Args:
             shape: Shape of the mask to be generated, which should contain
                 exactly 2 dimensions.
+            dtype: Data type of the mask to be generated.
             max_attempts: Maximum attempts to perform sampling in order to
                 obtain satisfactory acceleration.
             tolerance: Tolerance for how much the resulting acceleration can
@@ -127,9 +130,9 @@ class RandomLine(Mask):
                 raise ValueError
 
             # reshape the mask
-            mask = np.ones(shape) * mask
+            mask = np.ones(shape) * mask  # mask.dtype -> np.float64
 
-        return mask  # mask.dtype = np.float64
+        return mask.astype(dtype)
 
 
 class EquispacedLine(Mask):
@@ -150,6 +153,7 @@ class EquispacedLine(Mask):
     def __call__(
         self,
         shape: Tuple[int, ...],
+        dtype: np.dtype = np.complex64,
         max_attempts: int = 30,
         tolerance: float = 0.1,
         seed: Optional[Union[int, Sequence[int]]] = None
@@ -158,6 +162,7 @@ class EquispacedLine(Mask):
         Args:
             shape: Shape of the mask to be generated, which should contain
                 exactly 2 dimensions.
+            dtype: Data type of the mask to be generated.
             max_attempts: Maximum attempts to perform sampling in order to
                 obtain satisfactory acceleration.
             tolerance: Tolerance for how much the resulting acceleration can
@@ -203,9 +208,9 @@ class EquispacedLine(Mask):
                 raise ValueError
 
             # reshape the mask
-            mask = np.ones(shape) * mask
+            mask = np.ones(shape) * mask  # mask.dtype -> np.float64
 
-        return mask  # mask.dtype = np.float64
+        return mask.astype(dtype)
 
 
 class PoissonDisk(Mask):
@@ -227,6 +232,7 @@ class PoissonDisk(Mask):
     def __call__(
         self,
         shape: Tuple[int, ...],
+        dtype: np.dtype = np.complex64,
         max_attempts: int = 30,
         tolerance: float = 0.1,
         seed: Optional[Union[int, Sequence[int]]] = None
@@ -235,6 +241,7 @@ class PoissonDisk(Mask):
         Args:
             shape: Shape of the mask to be generated, which should contain
                 exactly 2 dimensions.
+            dtype: Data type of the mask to be generated.
             max_attempts: Maximum number of samples to choose before rejection
                 in Poisson disk sampling.
             tolerance: Tolerance for how much the resulting acceleration can
@@ -286,7 +293,8 @@ class PoissonDisk(Mask):
         if abs(self.acceleration_factor - current_accel) >= tolerance:
             raise ValueError
 
-        return mask  # mask.dtype = np.float64
+        # mask.dtype -> np.float64
+        return mask.astype(dtype)
 
 
 @nb.jit(nopython=True, cache=True)

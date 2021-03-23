@@ -9,7 +9,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setuptools.setup(
     name='mridataPy',
-    version='0.0.5',
+    version='0.0.6',
     description='A lightweight toolbox for downloading and processing mridata from mridata.org',
     author='Yi Zhang',
     author_email='yizhang.dev@gmail.com',
